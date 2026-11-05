@@ -1,3 +1,4 @@
+
 const express = require("express");
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
@@ -17,14 +18,20 @@ router.get("/", async (_req, res, next) => {
 // POST /api/tasks — create a task
 router.post("/", async (req, res, next) => {
   try {
-    const title = typeof req.body.title === "string" ? req.body.title.trim() : "";
-    const description = typeof req.body.description === "string" ? req.body.description.trim() : "";
+    const title = String(req.body.title ?? "").trim();
+    const description =
+      typeof req.body.description === "string"
+        ? req.body.description.trim()
+        : "";
 
     if (!title) {
       return res.status(400).json({ message: "Task title is required" });
     }
+
     if (title.length > 120 || description.length > 500) {
-      return res.status(400).json({ message: "Task title or description is too long" });
+      return res.status(400).json({
+        message: "Task title or description is too long"
+      });
     }
 
     const task = await Task.create({ title, description });
@@ -42,32 +49,50 @@ router.put("/:id", async (req, res, next) => {
     }
 
     const updates = {};
+
     if (Object.prototype.hasOwnProperty.call(req.body, "title")) {
-      if (typeof req.body.title !== "string" || !req.body.title.trim()) {
-        return res.status(400).json({ message: "Task title cannot be empty" });
+      const title = String(req.body.title ?? "").trim();
+
+      if (!title) {
+        return res.status(400).json({
+          message: "Task title cannot be empty"
+        });
       }
-      if (req.body.title.trim().length > 120) {
-        return res.status(400).json({ message: "Title cannot exceed 120 characters" });
+
+      if (title.length > 120) {
+        return res.status(400).json({
+          message: "Title cannot exceed 120 characters"
+        });
       }
-      updates.title = req.body.title.trim();
+
+      updates.title = title;
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "description")) {
-      if (typeof req.body.description !== "string" || req.body.description.length > 500) {
+      if (
+        typeof req.body.description !== "string" ||
+        req.body.description.length > 500
+      ) {
         return res.status(400).json({ message: "Invalid description" });
       }
+
       updates.description = req.body.description.trim();
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "completed")) {
       if (typeof req.body.completed !== "boolean") {
-        return res.status(400).json({ message: "completed must be true or false" });
+        return res.status(400).json({
+          message: "completed must be true or false"
+        });
       }
+
       updates.completed = req.body.completed;
     }
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ message: "No valid fields provided for update" });
+      return res.status(400).json({
+        message: "No valid fields provided for update"
+      });
     }
 
     const task = await Task.findByIdAndUpdate(req.params.id, updates, {
@@ -78,6 +103,7 @@ router.put("/:id", async (req, res, next) => {
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
+
     res.json(task);
   } catch (error) {
     next(error);
@@ -92,10 +118,15 @@ router.delete("/:id", async (req, res, next) => {
     }
 
     const task = await Task.findByIdAndDelete(req.params.id);
+
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-    res.json({ message: "Task deleted successfully", id: task._id });
+
+    res.json({
+      message: "Task deleted successfully",
+      id: task._id
+    });
   } catch (error) {
     next(error);
   }
